@@ -1,43 +1,48 @@
 package main
 
 import (
-  "image"
-  "image/png"
-  "github.com/massigerardi/avatarme"
-  "fmt"
-  "os"
-  "crypto/rsa"
-  "crypto/rand"
+	"crypto/rand"
+	"crypto/rsa"
+	"flag"
+	"fmt"
+	"github.com/massigerardi/avatarme"
+	"image"
+	"image/png"
+	"os"
 )
 
 var g avatarme.IconGenerator
 
 func main() {
-  fmt.Println("---------")
-  pvtKey, err :=  rsa.GenerateKey(rand.Reader, 1024)
-  if err != nil {
-    panic(err)
-  }
-  g := avatarme.New280(pvtKey)
-  img := g.GeneratePixel("massigerardi")
-  toFile(img, "demo/icons/testenc")
-  g = avatarme.New400(pvtKey)
-  img = g.GeneratePixel("massigerardi")
-  toFile(img, "demo/icons/test400enc")
-  g = avatarme.New280(nil)
-  img = g.GeneratePixel("massigerardi")
-  toFile(img, "demo/icons/test250")
-  g = avatarme.New400(nil)
-  img = g.GeneratePixel("massigerardi")
-  toFile(img, "demo/icons/test400")
+	var email = flag.String("email", "", "the email to encode")
+	//var ip = flag.String("ip", "", "the ip to encode")
+	//var key = flag.String("pKey", "", "the public key to use in the encoding")
+	flag.Parse()
+	pvtKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		panic(err)
+	}
+	if *email != "" {
+		fmt.Printf("email %v\n", *email)
+		g := avatarme.New280(pvtKey)
+		img := g.GeneratePixel(*email)
+		err = toFile(img, fmt.Sprintf("%v", *email))
+		if err != nil {
+			panic(err)
+		}
+	}
+
 }
 
 func toFile(img image.Image, p string) error {
-  file, err := os.Create(fmt.Sprintf("%v.png", p))
-  if err != nil {
-    return err
-  }
-  defer file.Close()
-  png.Encode(file, img)
-  return nil
+	os.MkdirAll("demo/icons/", 0777)
+	file, err := os.Create(fmt.Sprintf("demo/icons/%v.png", p))
+	if err != nil {
+		return err
+	}
+	fmt.Printf("write %v\n", file.Name())
+	defer file.Close()
+	png.Encode(file, img)
+	fmt.Printf("wrote %v\n", file.Name())
+	return nil
 }
